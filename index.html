@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criação Musical 1 - Prof. Glauber Santiago</title>
+    <!-- Fontes do Google para estilizar a tipografia parecida com a imagem -->
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    
+    <!-- Biblioteca Soundfont Player -->
+    <script src="https://unpkg.com/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+
+    <style>
+        /* Reset e Configurações Globais */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Previne seleção de texto ao tocar no piano */
+        }
+
+        /* Otimizado para funcionar dentro do Iframe (Incorporar) do Moodle */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* Fundo com gradiente radial vibrante imitando a iluminação de palco/neon da imagem */
+            background: radial-gradient(circle at 50% 30%, #4a0082 0%, #1a0033 50%, #05000a 100%);
+            overflow: hidden;
+            color: white;
+            position: relative;
+        }
+
+        /* Efeitos de luz no fundo (estrelas/partículas) */
+        .background-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ff00ff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 90px 40px, #ffcc00, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 160px 120px, #00ffff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            opacity: 0.6;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Container Principal */
+        .main-container {
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            padding: 10px;
+        }
+
+        /* Cabeçalho / Títulos */
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .title {
+            font-family: 'Anton', sans-serif;
+            font-size: clamp(2rem, 6vw, 4rem);
+            line-height: 1;
+            white-space: nowrap; /* Força o texto a ficar em uma única linha */
+            text-transform: uppercase;
+            /* Recriando o efeito 3D Amarelo com borda Roxa */
+            background: linear-gradient(to bottom, #fff8b0 0%, #ffd000 40%, #ff8800 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: 2px #4a00e0;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.8)) drop-shadow(3px 3px 0px #310066);
+            margin-bottom: 5px;
+        }
+
+        .subtitle-wrapper {
+            position: absolute;
+            top: 32%; /* Posiciona no meio das teclas pretas */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; /* Garante que fique acima das teclas */
+            pointer-events: none; /* CRUCIAL: Permite que o usuário clique nas teclas através do texto */
+            display: inline-block;
+            background: linear-gradient(to right, #6200ea, #aa00ff, #6200ea);
+            padding: 4px 20px;
+            border-radius: 50px;
+            border: 2px solid #e0b0ff;
+            box-shadow: 0 0 15px rgba(170, 0, 255, 0.6), inset 0 0 8px rgba(255,255,255,0.3);
+        }
+
+        .subtitle {
+            font-size: clamp(0.7rem, 2vw, 1rem); /* Tamanho levemente ajustado para encaixar melhor */
+            font-weight: 800;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Teclado Musical */
+        .keyboard-wrapper {
+            width: 100%;
+            background: #111;
+            padding: 10px 8px 8px 8px;
+            border-radius: 12px;
+            border: 3px solid #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.8), 0 0 20px rgba(255,0,255,0.3);
+            position: relative;
+        }
+
+        .keyboard {
+            display: flex;
+            position: relative;
+            width: 100%;
+            height: clamp(80px, 35vh, 140px);
+            border-radius: 0 0 6px 6px;
+            overflow: hidden;
+        }
+
+        .white-key {
+            flex: 1;
+            background: linear-gradient(to bottom, #ffffff 0%, #e6e6e6 100%);
+            border: 1px solid #ccc;
+            border-bottom: 6px solid #bbb;
+            border-radius: 0 0 6px 6px;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 15px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .white-key:hover {
+            background: linear-gradient(to bottom, #f0f0f0 0%, #dcdcdc 100%);
+        }
+
+        .white-key.active {
+            background: linear-gradient(to bottom, #e0e0e0 0%, #cccccc 100%);
+            border-bottom: 2px solid #aaa;
+            transform: translateY(4px); /* Efeito de tecla sendo pressionada */
+        }
+
+        .black-key {
+            position: absolute;
+            background: linear-gradient(to bottom, #333 0%, #000 100%);
+            border: 1px solid #000;
+            border-bottom: 5px solid #222;
+            border-radius: 0 0 4px 4px;
+            z-index: 2;
+            height: 60%;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 10px;
+            box-shadow: 2px 4px 6px rgba(0,0,0,0.6);
+        }
+
+        .black-key.active {
+            background: linear-gradient(to bottom, #1a1a1a 0%, #000 100%);
+            border-bottom: 2px solid #111;
+            transform: translateY(3px);
+            box-shadow: 1px 2px 3px rgba(0,0,0,0.6);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!--
+    =======================================================================
+    ATENÇÃO PARA USUÁRIOS DO MOODLE:
+    Não cole este código diretamente no editor de texto (Rótulo ou Página),
+    pois o Moodle apagará as tags <script> e <style> por segurança.
+
+    COMO INSERIR NO MOODLE CORRETAMENTE:
+    1. Salve este código completo como um arquivo HTML (ex: teclado.html).
+    2. No seu curso do Moodle, adicione um recurso do tipo "Arquivo".
+    3. Faça o upload do 'teclado.html'.
+    4. Na seção "Aparência", mude a exibição para "Incorporar" (Embed).
+    =======================================================================
+    -->
+
+    <!-- Elementos Decorativos -->
+    <div class="background-glow"></div>
+
+    <div class="main-container">
+        
+        <!-- Cabeçalho -->
+        <div class="header">
+            <h1 class="title">CRIAÇÃO MUSICAL 1</h1>
+        </div>
+
+        <!-- Área do Teclado -->
+        <div class="keyboard-wrapper">
+            <div class="subtitle-wrapper">
+                <span class="subtitle">- Prof. Glauber Santiago -</span>
+            </div>
+            <div class="keyboard" id="keyboard">
+                <!-- As teclas serão geradas via JavaScript -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO DAS NOTAS (2 Oitavas: C4 a B5) ---
+        const notes = [
+            { id: 'C4',  type: 'white' }, { id: 'C#4', type: 'black' },
+            { id: 'D4',  type: 'white' }, { id: 'D#4', type: 'black' },
+            { id: 'E4',  type: 'white' }, { id: 'F4',  type: 'white' },
+            { id: 'F#4', type: 'black' }, { id: 'G4',  type: 'white' },
+            { id: 'G#4', type: 'black' }, { id: 'A4',  type: 'white' },
+            { id: 'A#4', type: 'black' }, { id: 'B4',  type: 'white' },
+            
+            { id: 'C5',  type: 'white' }, { id: 'C#5', type: 'black' },
+            { id: 'D5',  type: 'white' }, { id: 'D#5', type: 'black' },
+            { id: 'E5',  type: 'white' }, { id: 'F5',  type: 'white' },
+            { id: 'F#5', type: 'black' }, { id: 'G5',  type: 'white' },
+            { id: 'G#5', type: 'black' }, { id: 'A5',  type: 'white' },
+            { id: 'A#5', type: 'black' }, { id: 'B5',  type: 'white' }
+        ];
+
+        // --- GERAÇÃO DA INTERFACE DO TECLADO ---
+        const keyboardDiv = document.getElementById('keyboard');
+        const whiteKeys = notes.filter(n => n.type === 'white');
+        const totalWhiteKeys = whiteKeys.length;
+        const whiteKeyWidthPercent = 100 / totalWhiteKeys;
+        const blackKeyWidthPercent = 4.5;
+
+        let whiteKeyIndex = 0;
+        
+        notes.forEach((note) => {
+            const keyElement = document.createElement('div');
+            keyElement.classList.add(note.type + '-key');
+            keyElement.dataset.note = note.id;
+
+            if (note.type === 'white') {
+                keyboardDiv.appendChild(keyElement);
+                whiteKeyIndex++;
+            } else {
+                const leftPos = (whiteKeyIndex * whiteKeyWidthPercent) - (blackKeyWidthPercent / 2);
+                keyElement.style.width = `${blackKeyWidthPercent}%`;
+                keyElement.style.left = `${leftPos}%`;
+                keyboardDiv.appendChild(keyElement);
+            }
+        });
+
+        // --- MOTOR DE ÁUDIO COM SOUNDFONT-PLAYER ---
+        let ac;
+        let instrument;
+        const activeNotes = {};
+        let isInitializing = false;
+
+        async function initAudioAndPlay(noteId) {
+            if (isInitializing) return;
+            
+            isInitializing = true;
+            // Inicia o AudioContext após a primeira interação do utilizador
+            ac = new (window.AudioContext || window.webkitAudioContext)();
+            
+            try {
+                // Carrega o piano elétrico
+                instrument = await Soundfont.instrument(ac, 'electric_piano_1');
+                playSound(noteId); // Toca a nota em que o utilizador clicou
+            } catch (err) {
+                console.error("Erro no Soundfont:", err);
+            } finally {
+                isInitializing = false;
+            }
+        }
+
+        function playSound(noteId) {
+            if (!instrument) return;
+            
+            // Se a nota já está tocando, para antes de tocar novamente (evita som acumulado)
+            if (activeNotes[noteId]) {
+                activeNotes[noteId].stop();
+            }
+            
+            // Toca a nota
+            activeNotes[noteId] = instrument.play(noteId);
+            
+            // Atualiza UI
+            const keyEl = document.querySelector(`[data-note="${noteId}"]`);
+            if (keyEl) keyEl.classList.add('active');
+        }
+
+        function stopSound(noteId) {
+            if (!instrument || !activeNotes[noteId]) return;
+            
+            // Interrompe o som
+            activeNotes[noteId].stop();
+            delete activeNotes[noteId];
+
+            // Atualiza UI
+            const keyEl = document.querySelector(`[data-note="${noteId}"]`);
+            if (keyEl) keyEl.classList.remove('active');
+        }
+
+        // --- CONTROLES APENAS COM O MOUSE ---
+        const keysElements = document.querySelectorAll('.white-key, .black-key');
+        
+        keysElements.forEach(key => {
+            key.addEventListener('mousedown', (e) => {
+                if(e.button !== 0) return; // Apenas clique com o botão esquerdo
+                
+                if (!instrument) {
+                    // Inicia o áudio no primeiro clique
+                    initAudioAndPlay(key.dataset.note);
+                } else {
+                    playSound(key.dataset.note);
+                }
+            });
+            
+            key.addEventListener('mouseup', () => {
+                stopSound(key.dataset.note);
+            });
+            
+            key.addEventListener('mouseleave', () => {
+                stopSound(key.dataset.note);
+            });
+        });
+
+    </script>
+</body>
+</html>
